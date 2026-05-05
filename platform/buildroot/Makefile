@@ -124,6 +124,23 @@ DEFCONFIG_X86 := phantomfpga_x86_64_defconfig
 DEFCONFIG_ARM := phantomfpga_aarch64_defconfig
 KERNEL_FRAGMENT_TEST_IO := $(CONFIG_DIR)/phantomfpga-test-io-kernel.fragment
 
+# Files that should invalidate our coarse-grained stamps when they change.
+# Buildroot itself tracks many internal dependencies, but our wrapper stamps
+# must also notice repo-level inputs like defconfigs and overlay files.
+OVERLAY_FILES := $(shell cd "$(OVERLAY_DIR)" && find . -type f | sort | sed 's#^\./#$(OVERLAY_DIR)/#')
+CONFIG_SHARED_INPUTS = \
+	$(MAKEFILE_DIR)/Makefile \
+	$(KERNEL_FRAGMENT_TEST_IO) \
+	$(OVERLAY_FILES)
+CONFIG_INPUTS_X86 = \
+	$(CONFIG_SHARED_INPUTS) \
+	$(CONFIG_DIR)/$(DEFCONFIG_X86) \
+	$(TC_BOOTLIN_X86)
+CONFIG_INPUTS_ARM = \
+	$(CONFIG_SHARED_INPUTS) \
+	$(CONFIG_DIR)/$(DEFCONFIG_ARM) \
+	$(TC_BOOTLIN_ARM)
+
 # -----------------------------------------------------------------------------
 # BUILD PARALLELISM
 # -----------------------------------------------------------------------------
@@ -301,7 +318,7 @@ TC_BOOTLIN_ARM := $(CONFIG_DIR)/toolchain-bootlin-aarch64.fragment
 .PHONY: configure-x86_64
 configure-x86_64: $(STAMP_CONFIG_X86)
 
-$(STAMP_CONFIG_X86): $(STAMP_EXTRACT) | $(OUTPUT_X86)
+$(STAMP_CONFIG_X86): $(STAMP_EXTRACT) $(CONFIG_INPUTS_X86) | $(OUTPUT_X86)
 	@echo "$(BLUE)==> Configuring x86_64 build...$(NC)"
 	$(Q)cp "$(CONFIG_DIR)/$(DEFCONFIG_X86)" "$(BR_DIR)/configs/"
 	$(Q)$(MAKE) -C "$(BR_DIR)" O="$(OUTPUT_X86)" $(DEFCONFIG_X86) \
@@ -327,7 +344,7 @@ endif
 .PHONY: configure-aarch64
 configure-aarch64: $(STAMP_CONFIG_ARM)
 
-$(STAMP_CONFIG_ARM): $(STAMP_EXTRACT) | $(OUTPUT_ARM)
+$(STAMP_CONFIG_ARM): $(STAMP_EXTRACT) $(CONFIG_INPUTS_ARM) | $(OUTPUT_ARM)
 	@echo "$(BLUE)==> Configuring aarch64 build...$(NC)"
 	$(Q)cp "$(CONFIG_DIR)/$(DEFCONFIG_ARM)" "$(BR_DIR)/configs/"
 	$(Q)$(MAKE) -C "$(BR_DIR)" O="$(OUTPUT_ARM)" $(DEFCONFIG_ARM) \
@@ -365,7 +382,7 @@ endif
 .PHONY: build-x86_64
 build-x86_64: $(STAMP_BUILD_X86)
 
-$(STAMP_BUILD_X86): $(STAMP_CONFIG_X86) | $(IMAGES_DIR)
+$(STAMP_BUILD_X86): $(STAMP_CONFIG_X86) $(OVERLAY_FILES) | $(IMAGES_DIR)
 	@echo "$(BLUE)==> Building x86_64 image (this will take a while)...$(NC)"
 	@echo "    Using $(NPROC) parallel jobs"
 ifeq ($(V),0)
@@ -381,7 +398,7 @@ endif
 .PHONY: build-aarch64
 build-aarch64: $(STAMP_BUILD_ARM)
 
-$(STAMP_BUILD_ARM): $(STAMP_CONFIG_ARM) | $(IMAGES_DIR)
+$(STAMP_BUILD_ARM): $(STAMP_CONFIG_ARM) $(OVERLAY_FILES) | $(IMAGES_DIR)
 	@echo "$(BLUE)==> Building aarch64 image (this will take a while)...$(NC)"
 	@echo "    Using $(NPROC) parallel jobs"
 ifeq ($(V),0)
