@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Bring up a predictable I2C test bus backed by the kernel's SMBus stub.
+
+case "$1" in
+    start)
+        printf "Starting I2C test stub bus: "
+
+        if ! modprobe i2c-stub chip_addr=0x48 >/tmp/i2c-test-bus.log 2>&1; then
+            echo "FAIL"
+            cat /tmp/i2c-test-bus.log
+            exit 1
+        fi
+
+        # Preload a non-zero temperature register value so bus probes are useful.
+        if command -v i2cset >/dev/null 2>&1; then
+            i2cset -y 0 0x48 0x00 0x8019 w >/dev/null 2>&1 || true
+        fi
+
+        echo "OK"
+        ;;
+    stop)
+        printf "Stopping I2C test stub bus: "
+        rmmod i2c-stub >/dev/null 2>&1 || true
+        echo "OK"
+        ;;
+    restart)
+        "$0" stop
+        "$0" start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0

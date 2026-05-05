@@ -181,6 +181,33 @@ Tip: Run './platform/run_qemu.sh' to boot the VM.
 
 If the command finishes but you don't see this message, something went wrong. Check the troubleshooting section.
 
+### Optional test hooks
+
+The default guest image also includes a small pair of optional test hooks for people
+who want to exercise extra Linux device paths while they work on the main PCIe flow:
+
+- An `i2c-stub` test device at address `0x48`
+- A responder-backed UART test port on `/dev/ttyS0`
+
+These are not required for the PhantomFPGA driver path, but they are handy when you
+want a known-good I2C or UART endpoint inside the same VM.
+
+Inside the guest, you can probe them with:
+
+```bash
+# I2C test device
+i2cdetect -l
+i2cdetect -y 0
+i2cget -y 0 0x48 0x00 w
+
+# UART test port
+printf 'ping\n' > /dev/ttyS0
+head -c 5 < /dev/ttyS0
+```
+
+The I2C register is preloaded with `0x8019`, and the UART responder accepts simple
+commands such as `ping`, `status`, and `reset`.
+
 ### Step 4: Boot the VM
 
 The moment of truth:

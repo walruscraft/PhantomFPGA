@@ -1,0 +1,44 @@
+#!/bin/sh
+
+PIDFILE=/var/run/uart-test-port.pid
+RESPONDER=/usr/bin/uart-test-responder
+
+start_uart_test_port() {
+    rm -f /dev/ttyS0
+
+    /usr/bin/socat \
+        pty,rawer,echo=0,link=/dev/ttyS0,wait-slave \
+        EXEC:${RESPONDER},pty,rawer,echo=0 &
+    echo $! > "${PIDFILE}"
+}
+
+stop_uart_test_port() {
+    if [ -f "${PIDFILE}" ]; then
+        kill "$(cat "${PIDFILE}")" >/dev/null 2>&1 || true
+        rm -f "${PIDFILE}"
+    fi
+    rm -f /dev/ttyS0
+}
+
+case "$1" in
+    start)
+        printf "Starting UART test port responder: "
+        start_uart_test_port
+        echo "OK"
+        ;;
+    stop)
+        printf "Stopping UART test port responder: "
+        stop_uart_test_port
+        echo "OK"
+        ;;
+    restart)
+        "$0" stop
+        "$0" start
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit 0

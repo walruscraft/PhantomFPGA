@@ -59,6 +59,8 @@ BR2_PACKAGE_KMOD_TOOLS=y
 BR2_PACKAGE_STRACE=y
 BR2_PACKAGE_FILE=y
 BR2_PACKAGE_LESS=y
+BR2_PACKAGE_SOCAT=y
+BR2_PACKAGE_GESFTPSERVER=y
 # Note: gdbserver provided via overlay (static binary)
 
 # Editor and terminal multiplexer

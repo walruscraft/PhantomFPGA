@@ -2,7 +2,7 @@
 # PhantomFPGA Buildroot Makefile
 # =============================================================================
 #
-# This Makefile builds a minimal Linux system for our QEMU-based training VM.
+# This Makefile builds a minimal Linux system for our QEMU VM.
 # It wraps Buildroot, which is a tool for building embedded Linux systems.
 #
 # STOP! Before you run "make" and walk away, take a moment to understand
@@ -122,6 +122,7 @@ IMAGES_DIR := $(TOP_DIR)/platform/images
 # Our defconfig names - these files live in configs/
 DEFCONFIG_X86 := phantomfpga_x86_64_defconfig
 DEFCONFIG_ARM := phantomfpga_aarch64_defconfig
+KERNEL_FRAGMENT_TEST_IO := $(CONFIG_DIR)/phantomfpga-test-io-kernel.fragment
 
 # -----------------------------------------------------------------------------
 # BUILD PARALLELISM
@@ -309,6 +310,8 @@ $(STAMP_CONFIG_X86): $(STAMP_EXTRACT) | $(OUTPUT_X86)
 		$(if $(filter 0,$(V)),>/dev/null 2>&1,)
 	@# Append overlay path
 	$(Q)echo 'BR2_ROOTFS_OVERLAY="$(OVERLAY_DIR)"' >> "$(OUTPUT_X86)/.config"
+	@# Append shared kernel fragment path for optional I2C test support
+	$(Q)echo 'BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES="$(KERNEL_FRAGMENT_TEST_IO)"' >> "$(OUTPUT_X86)/.config"
 	@# Toolchain selection based on host architecture
 ifeq ($(HOST_ARCH),x86_64)
 	@echo "    $(GREEN)Using Bootlin toolchain (x86_64 host)$(NC)"
@@ -333,6 +336,8 @@ $(STAMP_CONFIG_ARM): $(STAMP_EXTRACT) | $(OUTPUT_ARM)
 		$(if $(filter 0,$(V)),>/dev/null 2>&1,)
 	@# Append overlay path
 	$(Q)echo 'BR2_ROOTFS_OVERLAY="$(OVERLAY_DIR)"' >> "$(OUTPUT_ARM)/.config"
+	@# Append shared kernel fragment path for optional I2C test support
+	$(Q)echo 'BR2_LINUX_KERNEL_CONFIG_FRAGMENT_FILES="$(KERNEL_FRAGMENT_TEST_IO)"' >> "$(OUTPUT_ARM)/.config"
 	@# Toolchain selection based on host architecture
 ifeq ($(HOST_ARCH),x86_64)
 	@echo "    $(GREEN)Using Bootlin toolchain (x86_64 host)$(NC)"

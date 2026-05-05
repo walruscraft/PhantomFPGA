@@ -1,0 +1,19 @@
+#!/bin/sh
+
+while IFS= read -r line; do
+    line=${line%"$(printf '\r')"}
+    case "$line" in
+        ping|ing)
+            printf 'pong\n'
+            ;;
+        status|tatus)
+            printf 'ready\n'
+            ;;
+        reset|eset)
+            printf 'ok\n'
+            ;;
+        *)
+            printf 'unknown\n'
+            ;;
+    esac
+done
